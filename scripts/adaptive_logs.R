@@ -191,7 +191,7 @@ xgbdata <- xgb_fit$resample
 xgbdata$model <- "XGBoost"
 
 leveldata <- level_fit$resample
-leveldata$model <- "Level Level"
+leveldata$model <- "Log Log"
 
 olsdata <- ols_fit$resample
 olsdata$model <- "OLS (with covariates)"
@@ -231,7 +231,7 @@ ggsave("graphs/modelcomp_logs_training_pointrange.pdf",
 
 #Out of Sample####
 
-modellist <- list("Level Level"=level_fit,
+modellist <- list("Log Log"=level_fit,
                   "Ranger"=ranger_fit,
                   "OLS (with covariates)"=ols_fit,
                   #"Random Forest"=rf_fit,
@@ -246,7 +246,7 @@ testbaked <- bake(prep(rec_obj,
 preds <- predict(modellist,newdata=testbaked)
 
 #Have to do this one separately because of preprocessing in "baked" data 
-preds[["Level Level"]]  <- predict(level_fit,newdata=testing) 
+preds[["Log Log"]]  <- predict(level_fit,newdata=testing) 
 
 fvefun <- function(outcome,prediction) {
     fve <- 1 - (mean((outcome-prediction)^2,na.rm=TRUE) / var(outcome))
@@ -302,5 +302,6 @@ ggplot(data=scatterdata,aes(x=Seconds/60,y=FVE,label=model)) +
     geom_text(check_overlap = FALSE) +
     theme_grey(base_size = 16) +
     labs(x="Estimation Time (minutes)",y="FVE")
+
 ggsave("graphs/modelcomp_logs_scatter.pdf",
        width=16,height=9)
