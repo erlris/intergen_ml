@@ -91,6 +91,63 @@ stargazer::stargazer(sampledata,
                      type="text",
                      summary=TRUE)
 
+#Plots
+
+sampledata %>%
+    select("Child's Average Earnings"=meanpearn_child,
+           "Father's Average Earnings"=meanpearn_father,
+           "Mother's Average Earnings"=meanpearn_mother) %>%
+    gather() %>%
+    filter(value < 1000000) %>%
+    ggplot(aes(x=value,fill=key,linetype=key)) +
+    geom_density(alpha=0.5) +
+    scale_linetype(name="") +
+    scale_fill_brewer(name="",
+                      palette="Set1") +
+    theme(legend.position = "bottom") +
+    labs(x="Average Earnings",
+         y="Density")
+
+ggsave("graphs/earndensities.pdf",
+       height=7,width=7)
+
+sampledata %>%
+    select("Father's Average Wealth"=meanwealth_father,
+           "Mother's Average Wealth"=meanwealth_mother) %>%
+    gather() %>%
+    filter(value < 1000000) %>%
+    ggplot(aes(x=value,fill=key,linetype=key)) +
+    geom_density(alpha=0.5) +
+    scale_linetype(name="") +
+    scale_fill_brewer(name="",
+                      palette="Set1") +
+    theme(legend.position = "bottom") +
+    labs(x="Average Wealth",
+         y="Density") +
+    coord_cartesian(xlim=c(0,150000))
+
+ggsave("graphs/wealthdensities.pdf",
+       height=7,width=7)
+
+sampledata %>%
+    select("Father's Years of Education"=eduy_father,
+           "Mother's Years of Education"=eduy_mother) %>%
+    gather() %>%
+    filter(value >= 8) %>%
+    ggplot(aes(x=value,fill=key,linetype=key)) +
+    geom_histogram(binwidth=1,
+                   position = "dodge") +
+    scale_linetype(name="") +
+    scale_fill_brewer(name="",
+                      palette="Set1") +
+    theme(legend.position = "bottom") +
+    labs(x="Years of Education",
+         y="Observations") +
+    scale_x_continuous(breaks=seq(8,22,2))
+
+ggsave("graphs/eduhistograms.pdf",
+       height=7,width=7)
+
 #Draw smaller random sample####
 set.seed(10101)
 smalldata <- sample_n(sampledata,125000)
@@ -979,3 +1036,89 @@ saveRDS(object=plotdata,
 
 saveRDS(object = results,
         file = "~/git/intergen_ml/data/regionresults.rds")
+
+#Comparing predictions from ML and OLS####
+
+df1 <- data.frame(lapply(m1modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=1)
+
+
+df2 <- data.frame(lapply(m2modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=2)
+
+
+df3 <- data.frame(lapply(m3modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=3)
+
+
+df4 <- data.frame(lapply(m4modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=4)
+
+
+df5 <- data.frame(lapply(m5modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=5)
+
+
+df6 <- data.frame(lapply(m6modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=6)
+
+
+df7 <- data.frame(lapply(m7modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=7)
+
+df8 <- data.frame(lapply(m8modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=8)
+
+
+df9 <- data.frame(lapply(m9modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=9)
+
+df10 <- data.frame(lapply(m10modellist,function(x) predict(x,newdata=test)),
+                  observed=test$earncdf_child,
+                  modelnumber=10)
+
+predictionresults <- bind_rows(df1,df2,df3,df4,df5,df6,df7,df8,df9,df10)
+
+variablelist <- plotdata %>%
+    select(variables,modelnumber) %>%
+    group_by(modelnumber) %>%
+    filter(row_number(modelnumber)==1)
+
+predictionresults <- inner_join(x=predictionresults,y=variablelist,by=c("modelnumber"))
+
+predictionresults %>%
+    gather(key="key",value="value",-observed,-variables,-modelnumber) %>%
+    filter(key=="OLS" | key=="XGBoost") %>%
+    ggplot(aes(x=observed,y=value,color=key,shape=key)) +
+    stat_summary_bin(binwidth=2,
+                     fun.y="mean",
+                     geom="point") +
+    stat_summary_bin(binwidth=2,
+                     fun.y="mean",
+                     geom="line") +
+    stat_summary_bin(binwidth=2,
+                     fun.data="mean_cl_boot",
+                     geom="ribbon",
+                     alpha=0.2,
+                     aes(color=NULL,
+                         fill=key)) +
+    scale_fill_brewer(name="",palette = "Set1") +
+    scale_linetype(name="") + 
+    scale_color_brewer(name="",palette = "Set1") +
+    scale_shape(name="") +
+    facet_wrap(~ reorder(str_wrap(variables,70),modelnumber)) +
+    theme(legend.position = c(0.63,0.15)) +
+    labs(x="Observed Earnings Percentile",
+         y="Predicted Earnings Percentile")
+    
+ggsave("graphs/predictioncomparisons.pdf",
+       height=9,width=16)
