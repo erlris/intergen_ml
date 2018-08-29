@@ -927,6 +927,51 @@ sampledata %>%
 ggsave("graphs/conditionalmeans_childearn_fatherwealth.pdf",
        height=7,width=7)
 
+#Making maps
+
+coords <- read_dta("/data/gis/norge/arbeidsmarked/koordinat_arbeidsmarked.dta")
+
+colnames(coords) <- c("region","id","x","y")
+
+mapdata <- results %>%
+    mutate(region=as.numeric(as.character(region))) %>%
+    select(region,rank_coef,edu_coef,wealth_coef)
+
+mapdata <- inner_join(x=mapdata,y=coords,by=c("region"))
+
+mapdata %>%
+    ggplot(aes(x=x,y=y,group=region,fill=rank_coef)) +
+    geom_polygon(color="black",size=0.1) +
+    scale_fill_distiller(name="Rank-Rank\nCoefficient",
+                         palette = "Blues",direction = 1) +
+    theme_void() +
+    theme(legend.position = c(0.7,0.5))
+
+ggsave("graphs/map_rankrank.pdf",
+       height=7,width=7)
+
+mapdata %>%
+    ggplot(aes(x=x,y=y,group=region,fill=edu_coef)) +
+    geom_polygon(color="black",size=0.1) +
+    scale_fill_distiller(name="Rank-Education\nCoefficient",
+                         palette = "Blues",direction = 1) +
+    theme_void() +
+    theme(legend.position = c(0.7,0.5))
+
+ggsave("graphs/map_rankedu.pdf",
+       height=7,width=7)
+
+mapdata %>%
+    ggplot(aes(x=x,y=y,group=region,fill=wealth_coef)) +
+    geom_polygon(color="black",size=0.1) +
+    scale_fill_distiller(name="Rank-Wealth\nCoefficient",
+                         palette = "Blues",direction = 1) +
+    theme_void() +
+    theme(legend.position = c(0.7,0.5))
+
+ggsave("graphs/map_rankwealth.pdf",
+       height=7,width=7)
+
 #Save datasets####
 
 saveRDS(object=plotdata,
