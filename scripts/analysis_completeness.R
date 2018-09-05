@@ -856,11 +856,11 @@ results <- foreach (region = regions, .combine = rbind) %do% {
 #Calculate variances and correlations 
 stats <- sampledata %>%
     group_by(region_child) %>%
-    summarize(earn_sd = sd(meanpearn_father),
+    summarize(earn_sd = sd(earncdf_father),
               edu_sd = sd(eduy_father),
-              wealth_sd = sd(meanwealth_father),
-              earn_edu_cor = cor(meanpearn_father,eduy_father),
-              earn_wealth_cor = cor(meanpearn_father,meanwealth_father))
+              wealth_sd = sd(wealthcdf_father),
+              earn_edu_cor = cor(earncdf_father,eduy_father),
+              earn_wealth_cor = cor(earncdf_father,meanwealth_father))
 
 results <- left_join(x=results,y=stats,by=c("region"="region_child"))
 
@@ -889,11 +889,11 @@ results %>%
     filter(observations > 200) %>%
     select(rsquared_ratio,earn_sd,edu_sd,wealth_sd,
            earn_edu_cor,earn_wealth_cor) %>%
-    rename("Stanard Deviation of Earnings"=earn_sd,
+    rename("Stanard Deviation of Earnings Percentile"=earn_sd,
            "Standard Deviation of Education"=edu_sd,
-           "Standard Deviation of Wealth"=wealth_sd,
-           "Correlation between Earnings and Education"=earn_edu_cor,
-           "Correlation between Earnings and Wealth"=earn_wealth_cor) %>%
+           "Standard Deviation of Wealth Percentile"=wealth_sd,
+           "Correlation between Earnings Percentile and Education"=earn_edu_cor,
+           "Correlation between Earnings Percentile and Wealth Percentile"=earn_wealth_cor) %>%
     gather(key=variable,value=value,-rsquared_ratio) %>%
     ggplot(aes(x=value,y=rsquared_ratio)) +
     geom_point() + 
