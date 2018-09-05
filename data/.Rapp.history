@@ -1,0 +1,2 @@
+load("/Users/jack/git_repos/intergen_ml/data/regionresults.rds")
+load("/Users/jack/git_repos/intergen_ml/data/modelresults.rds")
