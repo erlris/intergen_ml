@@ -17,6 +17,7 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(stringr)
+library(stargazer)
 
 # set default ggplot size
 theme_set(theme_gray(base_size = 18))
@@ -58,7 +59,7 @@ test %>%
   guides(fill = guide_legend(title.position = "top",title.hjust = 0.5))
 
 ggsave(file="graphs/test_R2.pdf",
-       height=11,width=11)
+       height=08,width=11)
 
 ### 2.2 Train
 
@@ -94,24 +95,29 @@ train %>%
   guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
 
 ggsave(file = "graphs/train_R2.pdf",
-       height = 11, width = 11)
+       height = 08, width = 11)
 
 ### 2.3 Tables
 
+train$variables <- gsub(x = train$variables, pattern = "&", replacement = "and")
 train.tbl <- train %>%
   gather(key = "Model", value = "rsquared",- variables, - modelnumber) %>%
   group_by(variables, Model) %>%
   summarize("Training R2 (mean)" = round(mean(rsquared), digits = 3),
             "Training R2 (sd)" = round(sd(rsquared), digits = 4)) %>%
   filter(is.na(`Training R2 (mean)`) == F) %>%
-  mutate(completeness = `Training R2 (mean)`/0.0490)
+  mutate(completeness = round(`Training R2 (mean)`/0.0490, digits = 2))
+stargazer(train.tbl, summary = F)
 
+test$variables <- gsub(x = test$variables, pattern = "&", replacement = "and")
 test.tbl <- test %>%
   gather(key = "Model", value = "rsquared",- variables, - modelnumber) %>%
   group_by(variables, Model) %>%
   summarize("Test R2" = round(mean(rsquared), digits = 3)) %>%
   filter(is.na(`Test R2`) == F) %>%
-  mutate(completeness = `Test R2`/0.0480)
+  mutate(completeness = round(`Test R2`/0.0480, digits = 2))
+stargazer(test.tbl, summary = F)
+
 
 ### 3. Maps ------
 
