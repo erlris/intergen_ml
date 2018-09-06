@@ -10,6 +10,7 @@ options("scipen"=100, "digits"=4)
 set.seed(123)
 
 setwd("/Users/jack/git_repos/intergen_ml") # Jack
+setwd("/home/erling/git/intergen_ml") #Erling on server
 
 # Load packages
 
