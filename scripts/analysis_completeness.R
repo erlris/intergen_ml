@@ -224,8 +224,12 @@ m1results <- bind_rows(resampledata,testdata)
 print(paste("Start","Income with multiple functional forms",Sys.time()))
 
 #Recipe
-rec_obj <- recipe(earncdf_child ~ earncdf_joint + sumpearn_joint + logpearn_joint,
+rec_obj <- recipe(earncdf_child ~ earncdf_father + earncdf_mother,
                   data=train)
+
+rec_obj <- rec_obj %>%
+    step_interact(terms = ~ earncdf_father:earncdf_mother) %>%
+    step_poly(all_predictors(),options=list(degree=3))
 
 print(paste("Start","OLS",Sys.time()))
 set.seed(10101)
@@ -871,7 +875,7 @@ results <- left_join(x=results,y=stats,by=c("region"="region_child"))
 
 #Calculate r-squareds by region (kunne gjort dette i funksjonen over)
 
-sampledata$xgbpred <- predict(m10_xgb,newdata=sampledata)
+sampledata$xgbpred <- predict(m7_xgb,newdata=sampledata)
 sampledata$rankpred <- predict(m1_lm,newdata=sampledata)
 
 rsquareds <- foreach (region=regions, .combine = rbind) %do% {
