@@ -104,11 +104,12 @@ sampledata %>%
     scale_linetype(name="") +
     scale_fill_brewer(name="",
                       palette="Set1") +
+    theme_grey(base_size = 18) +
     theme(legend.position = "bottom") +
     labs(x="Average Earnings",
          y="Density")
 
-ggsave("graphs/earndensities.pdf",
+ggsave("~/git/intergen_ml/graphs/earndensities.pdf",
        height=7,width=7)
 
 sampledata %>%
@@ -126,7 +127,7 @@ sampledata %>%
          y="Density") +
     coord_cartesian(xlim=c(0,150000))
 
-ggsave("graphs/wealthdensities.pdf",
+ggsave("~/git/intergen_ml/graphs/wealthdensities.pdf",
        height=7,width=7)
 
 sampledata %>%
@@ -145,7 +146,7 @@ sampledata %>%
          y="Observations") +
     scale_x_continuous(breaks=seq(8,22,2))
 
-ggsave("graphs/eduhistograms.pdf",
+ggsave("~/git/intergen_ml/graphs/eduhistograms.pdf",
        height=7,width=7)
 
 #Draw smaller random sample####
@@ -265,7 +266,7 @@ print(paste("Start","Income with polynomials",Sys.time()))
 rec_obj <- recipe(earncdf_child ~ earncdf_joint, data=train)
 
 rec_obj <- rec_obj %>% 
-    step_poly(earncdf_joint)
+    step_poly(earncdf_joint,options=list(degree=3))
 
 print(paste("Start","OLS",Sys.time()))
 set.seed(10101)
@@ -803,10 +804,11 @@ plotdata %>%
     facet_wrap("data",nrow=2) +
     scale_fill_brewer(palette = "Blues",name="Estimator") +
     labs(x="Included Variables",y="R-Squared") +
+    theme_grey(base_size=18)
     theme(legend.position = "bottom") +
-    guides(fill = guide_legend(title.position = "top",title.hjust = 0.5)) 
+    guides(fill = guide_legend(title.position = "top",title.hjust = 0.5))
 
-ggsave(file="graphs/completeness_modelcomp.pdf",
+ggsave(file="~/git/intergen_ml/graphs/completeness_modelcomp.pdf",
        height=11,width=11)
 
 #Regional comparisons####
@@ -898,10 +900,11 @@ results %>%
     ggplot(aes(x=value,y=rsquared_ratio)) +
     geom_point() + 
     geom_smooth(method="lm") +
-    labs(x="Value",y="Full R-Squared / Rank-Rank R-Squared") +
+    labs(x="Value",y="Full R-Squared / Rank-Rank R-Squared")+
+    theme_grey(base_size=18) +
     facet_wrap("variable",scales = "free_x")
 
-ggsave("graphs/rsquaredratio_stats.pdf",
+ggsave("~/git/intergen_ml/graphs/rsquaredratio_stats.pdf",
        width=16,height=9)
 
 results %>%
@@ -910,9 +913,10 @@ results %>%
     geom_point() +
     geom_smooth(method="lm") +
     labs(x="Rank-Rank Coefficient",
-         y="Rank-Education Coefficient")
+         y="Rank-Education Coefficient") +
+    theme_grey(base_size=18)
 
-ggsave("graphs/rankcoef_educoef.pdf",
+ggsave("~/git/intergen_ml/graphs/rankcoef_educoef.pdf",
        height=7,width=7)
 
 results %>%
@@ -921,44 +925,23 @@ results %>%
     geom_point() +
     geom_smooth(method="lm") +
     labs(x="Rank-Rank Coefficient",
-         y="Rank-Wealth Coefficient")
+         y="Rank-Wealth Coefficient") +
+    theme_grey(base_size=18)
 
-ggsave("graphs/rankcoef_wealthcoef.pdf",
+ggsave("~/git/intergen_ml/graphs/rankcoef_wealthcoef.pdf",
        height=7,width=7)
 
-results %>%
-    filter(observations > 200) %>%
-    gather(key=key,value=value,-region,-rank_coef,-observations) %>%
-    ggplot(aes(x=rank_coef,y=value)) +
-    geom_point(aes(size=observations)) + 
-    geom_smooth(method="lm",formula=y~poly(x,2)) +
-    facet_wrap("key",scales = "free_y")
-
 sampledata %>%
-    filter(eduy_father >= 8) %>%
-    select(earncdf_child,
-           "Father's Earnings Percentile"=earncdf_father,
-           "Father's Years of Education"=eduy_father,
-           "Father's Wealth Percentile"=wealthcdf_father) %>%
-    gather(key="measure",value=value,-earncdf_child) %>%
-    ggplot(aes(x=value,y=earncdf_child)) +
-    stat_summary_bin(fun.data="mean_cl_boot",geom="pointrange") +
-    facet_wrap("measure",scales="free_x") +
-    labs(x="Value",y="Child's Earnings Percentile")
-
-ggsave("graphs/conditionalmeans_earn_edu_wealth.pdf",
-       height=9,width=16)
-
-sampledata %>%
-    ggplot(aes(x=earncdf_father,y=earncdf_child)) +
+    ggplot(aes(x=earncdf_joint,y=earncdf_child)) +
     stat_summary_bin(fun.data="mean_cl_boot",
                      geom="pointrange",
-                     binwidth = 2) +
-    labs(x="Father's Earnings Percentile",
+                     breaks=seq(0,99,2)) +
+    labs(x="Parents' Joint Earnings Percentile",
          y="Child's Earnings Percentile") +
-    scale_x_continuous(breaks=seq(0,100,20))
+    scale_x_continuous(breaks=seq(0,100,20)) +
+    theme_grey(base_size=18)
     
-ggsave("graphs/conditionalmeans_childearn_fatherearn.pdf",
+ggsave("~/git/intergen_ml/graphs/conditionalmeans_childearn_jointearn.pdf",
        height=7,width=7)
 
 sampledata %>%
@@ -968,9 +951,10 @@ sampledata %>%
                      geom="pointrange") +
     labs(x="Father's Years of Education",
          y="Child's Earnings Percentile") +
-    scale_x_continuous(breaks=seq(8,22,2))
+    scale_x_continuous(breaks=seq(8,22,2)) +
+    theme_grey(base_size=18) 
 
-ggsave("graphs/conditionalmeans_childearn_fatheredu.pdf",
+ggsave("~/git/intergen_ml/graphs/conditionalmeans_childearn_fatheredu.pdf",
        height=7,width=7)
     
 sampledata %>%
@@ -979,9 +963,10 @@ sampledata %>%
                  geom="pointrange",
                  binwidth=2) +
     labs(x="Father's Wealth Percentile",
-         y="Child's Earnings Percentile") 
+         y="Child's Earnings Percentile") +
+    theme_grey(base_size=18)
 
-ggsave("graphs/conditionalmeans_childearn_fatherwealth.pdf",
+ggsave("~/git/intergen_ml/graphs/conditionalmeans_childearn_fatherwealth.pdf",
        height=7,width=7)
 
 #Making maps
@@ -1001,10 +986,10 @@ mapdata %>%
     geom_polygon(color="black",size=0.1) +
     scale_fill_distiller(name="Rank-Rank\nCoefficient",
                          palette = "Blues",direction = 1) +
-    theme_void() +
+    theme_void(base_size=18) +
     theme(legend.position = c(0.7,0.5))
 
-ggsave("graphs/map_rankrank.pdf",
+ggsave("~/git/intergen_ml/graphs/map_rankrank.pdf",
        height=7,width=7)
 
 mapdata %>%
@@ -1012,10 +997,10 @@ mapdata %>%
     geom_polygon(color="black",size=0.1) +
     scale_fill_distiller(name="Rank-Education\nCoefficient",
                          palette = "Blues",direction = 1) +
-    theme_void() +
+    theme_void(base_size=18) +
     theme(legend.position = c(0.7,0.5))
 
-ggsave("graphs/map_rankedu.pdf",
+ggsave("~/git/intergen_ml/graphs/map_rankedu.pdf",
        height=7,width=7)
 
 mapdata %>%
@@ -1023,12 +1008,21 @@ mapdata %>%
     geom_polygon(color="black",size=0.1) +
     scale_fill_distiller(name="Rank-Wealth\nCoefficient",
                          palette = "Blues",direction = 1) +
-    theme_void() +
+    theme_void(base_size=18) +
     theme(legend.position = c(0.7,0.5))
 
-ggsave("graphs/map_rankwealth.pdf",
+ggsave("~/git/intergen_ml/graphs/map_rankwealth.pdf",
        height=7,width=7)
 
+#Merge names for region results####
+
+regiondata <- readxl::read_xlsx("rawdata//labormarketregions_names.xlsx")
+
+regiondata$code <- as.factor(regiondata$code)
+
+results <- results %>%
+    inner_join(y=regiondata,by=c("region"="code"))
+    
 #Save datasets####
 
 saveRDS(object=plotdata,
@@ -1115,10 +1109,41 @@ predictionresults %>%
     scale_linetype(name="") + 
     scale_color_brewer(name="",palette = "Set1") +
     scale_shape(name="") +
-    facet_wrap(~ reorder(str_wrap(variables,70),modelnumber)) +
+    facet_wrap(~ reorder(str_wrap(variables,60),modelnumber)) +
+    theme_grey(base_size=16) +
     theme(legend.position = c(0.63,0.15)) +
     labs(x="Observed Earnings Percentile",
          y="Predicted Earnings Percentile")
     
-ggsave("graphs/predictioncomparisons.pdf",
+ggsave("~/git/intergen_ml/graphs/predictioncomparisons.pdf",
+       height=9,width=16)
+
+predictionresults %>%
+    gather(key="key",value="value",-observed,-variables,-modelnumber) %>%
+    filter(key=="OLS" | key=="XGBoost") %>%
+    ggplot(aes(x=observed,y=value,color=key,shape=key)) +
+    stat_summary_bin(binwidth=2,
+                     fun.y="mean",
+                     geom="point") +
+    stat_summary_bin(binwidth=2,
+                     fun.y="mean",
+                     geom="line") +
+    stat_summary_bin(binwidth=2,
+                     fun.data="mean_cl_boot",
+                     geom="ribbon",
+                     alpha=0.2,
+                     aes(color=NULL,
+                         fill=key)) +
+    geom_abline(aes(intercept=0,slope=1)) +
+    scale_fill_brewer(name="",palette = "Set1") +
+    scale_linetype(name="") + 
+    scale_color_brewer(name="",palette = "Set1") +
+    scale_shape(name="") +
+    facet_wrap(~ reorder(str_wrap(variables,60),modelnumber)) +
+    theme_grey(base_size=16) +
+    theme(legend.position = c(0.63,0.15)) +
+    labs(x="Observed Earnings Percentile",
+         y="Predicted Earnings Percentile")
+
+ggsave("~/git/intergen_ml/graphs/predictioncomparisons_45degreelines.pdf",
        height=9,width=16)
