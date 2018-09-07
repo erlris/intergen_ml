@@ -143,6 +143,8 @@ plotdata <- res.reg.scatter %>%
   geom_point() + xlab("rank-rank R2") +
   ylab("Full model R2")
 plotdata
+ggsave(file = "graphs/regions_R2.pdf",
+       height = 08, width = 11)
 
 ### 4.2 Completeness against distribution of other predictors ------
 
@@ -163,7 +165,23 @@ res.reg.scatter %>%
   facet_wrap("variable", scales = "free_x")
 
 ggsave(file = "graphs/completeness_dist.pdf",
-       height = 11, width = 11)
+       height = 09, width = 11)
+
+### Table of results by region
+
+res.reg.table <- res.reg %>% mutate(completeness = rsquared_rank/ rsquared_full) %>%
+  select(region, observations, earn_sd, edu_sd, wealth_sd, earn_edu_cor, earn_wealth_cor,
+         rsquared_rank, rsquared_full, completeness) %>%
+  mutate(earn_sd = round(earn_sd, digits = 2),
+         edu_sd = round(earn_sd, digits = 2),
+         wealth_sd = round(earn_sd, digits = 2),
+         earn_edu_cor = round(earn_sd, digits = 2),
+         earn_wealth_cor = round(earn_sd, digits = 2),
+         rsquared_rank = round(earn_sd, digits = 3),
+         rsquared_full = round(earn_sd, digits = 3),
+         completeness = round(completeness, digits = 3))
+
+stargazer(res.reg.table, summary = F, column.sep.width = "2pt")
 
 ### additional notes on graphs
 
