@@ -105,7 +105,7 @@ sampledata %>%
     scale_fill_brewer(name="",
                       palette="Set1") +
     theme_grey(base_size = 18) +
-    theme(legend.position = "bottom") +
+    theme(legend.position = "bottom",legend.direction = "vertical") +
     labs(x="Average Earnings",
          y="Density")
 
@@ -122,6 +122,7 @@ sampledata %>%
     scale_linetype(name="") +
     scale_fill_brewer(name="",
                       palette="Set1") +
+    theme_grey(base_size = 18) +
     theme(legend.position = "bottom") +
     labs(x="Average Wealth",
          y="Density") +
@@ -141,6 +142,7 @@ sampledata %>%
     scale_linetype(name="") +
     scale_fill_brewer(name="",
                       palette="Set1") +
+    theme_grey(base_size = 18) +
     theme(legend.position = "bottom") +
     labs(x="Years of Education",
          y="Observations") +
@@ -804,12 +806,12 @@ plotdata %>%
     facet_wrap("data",nrow=2) +
     scale_fill_brewer(palette = "Blues",name="Estimator") +
     labs(x="Included Variables",y="R-Squared") +
-    theme_grey(base_size=18)
+    theme_grey(base_size=15) +
     theme(legend.position = "bottom") +
     guides(fill = guide_legend(title.position = "top",title.hjust = 0.5))
 
 ggsave(file="~/git/intergen_ml/graphs/completeness_modelcomp.pdf",
-       height=11,width=11)
+       height=9,width=16)
 
 #Regional comparisons####
 
@@ -1109,7 +1111,7 @@ predictionresults %>%
     scale_linetype(name="") + 
     scale_color_brewer(name="",palette = "Set1") +
     scale_shape(name="") +
-    facet_wrap(~ reorder(str_wrap(variables,60),modelnumber)) +
+    facet_wrap(~ reorder(str_wrap(variables,40),modelnumber)) +
     theme_grey(base_size=16) +
     theme(legend.position = c(0.63,0.15)) +
     labs(x="Observed Earnings Percentile",
@@ -1139,7 +1141,7 @@ predictionresults %>%
     scale_linetype(name="") + 
     scale_color_brewer(name="",palette = "Set1") +
     scale_shape(name="") +
-    facet_wrap(~ reorder(str_wrap(variables,60),modelnumber)) +
+    facet_wrap(~ reorder(str_wrap(variables,40),modelnumber)) +
     theme_grey(base_size=16) +
     theme(legend.position = c(0.63,0.15)) +
     labs(x="Observed Earnings Percentile",
