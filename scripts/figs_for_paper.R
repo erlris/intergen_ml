@@ -238,18 +238,32 @@ ggsave(file = "graphs/completeness_dist.pdf",
 ### Table of results by region
 
 res.reg.table <- res.reg %>% mutate(completeness = rsquared_rank/ rsquared_full) %>%
-  select(region, observations, earn_sd, edu_sd, wealth_sd, earn_edu_cor, earn_wealth_cor,
-         rsquared_rank, rsquared_full, completeness) %>%
   mutate(earn_sd = round(earn_sd, digits = 2),
-         edu_sd = round(earn_sd, digits = 2),
-         wealth_sd = round(earn_sd, digits = 2),
-         earn_edu_cor = round(earn_sd, digits = 2),
-         earn_wealth_cor = round(earn_sd, digits = 2),
-         rsquared_rank = round(earn_sd, digits = 3),
-         rsquared_full = round(earn_sd, digits = 3),
-         completeness = round(completeness, digits = 3))
+         edu_sd = round(edu_sd, digits = 2),
+         wealth_sd = round(wealth_sd, digits = 2),
+         earn_edu_cor = round(earn_edu_cor, digits = 2),
+         earn_wealth_cor = round(earn_wealth_cor, digits = 2),
+         rsquared_rank = round(rsquared_rank, digits = 3),
+         rsquared_full = round(rsquared_full, digits = 3),
+         completeness = round(completeness, digits = 3)) %>% 
+    select(region, 
+           obs=observations,
+           "earn (sd)"=earn_sd,
+           "edu (sd)"=edu_sd, 
+           "wealth (sd)"=wealth_sd, 
+           "earn/edu corr"=earn_edu_cor,
+           "earn/wealth corr"=earn_wealth_cor,
+           "R2 (rank)"=rsquared_rank, 
+           "R2 (full)"=rsquared_full,
+           completeness) %>% 
+    arrange(region)
 
-stargazer(res.reg.table, summary = F, column.sep.width = "2pt")
+stargazer(res.reg.table,
+          summary = F,
+          column.sep.width = "2pt",
+          out="tables/region_results.tex",
+          float=F,
+          rownames = F)
 
 ### additional notes on graphs
 
