@@ -10,8 +10,8 @@ options("scipen"=100, "digits"=4)
 set.seed(123)
 
 setwd("/Users/jack/git_repos/intergen_ml") # Jack
-setwd("/home/erling/git/intergen_ml") #Erling on server
-setwd("C:/Users/s12864/Documents/Git/intergen_ml") #Erling on laptop
+#setwd("/home/erling/git/intergen_ml") #Erling on server
+#setwd("C:/Users/s12864/Documents/Git/intergen_ml") #Erling on laptop
 
 # Load packages
 
@@ -39,11 +39,10 @@ test <- res %>% filter(data == "Testing",
                                         "Income with multiple functional forms",
                                         "Income & wealth",
                                         "Income & education length",
-                                        "Income, wealth & education length",
-                                        "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")) %>%
+                                        "Income, wealth & education length")) %>%
   select(OLS, variables, ElasticNet, XGBoost, modelnumber)
 
-test$variables[which(test$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")] <- "Extended"
+#test$variables[which(test$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")] <- "Extended"
 test$variables[which(test$variables == "Income with multiple functional forms")] <- "Income (flexible)"
 test$ElasticNet[which(test$variables == "Income (flexible)")] <- NA
 
@@ -71,11 +70,10 @@ train <- res %>% filter(data == "Training Resamples",
                                         "Income with multiple functional forms",
                                         "Income & wealth",
                                         "Income & education length",
-                                        "Income, wealth & education length",
-                                        "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")) %>%
+                                        "Income, wealth & education length")) %>%
   select(OLS, variables, ElasticNet, XGBoost, modelnumber)
 
-train$variables[which(train$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")] <- "Extended"
+#train$variables[which(train$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")] <- "Extended"
 train$variables[which(train$variables == "Income with multiple functional forms")] <- "Income (flexible)"
 train$ElasticNet[which(train$variables == "Income (flexible)")] <- NA
 
@@ -121,8 +119,45 @@ test.tbl <- test %>%
   mutate(completeness = round(`Test R2`/0.0480, digits = 2))
 stargazer(test.tbl, summary = F)
 
+### 3. Regional results
 
-### 3. Maps ------
+# generate completeness index
+
+res.reg.clean <- res.reg %>% 
+  mutate(completeness=rsquared_rank/rsquared_full) %>%
+  mutate(completeness=ifelse(observations>=200,completeness,NA))
+
+# Table of results by region
+
+res.reg.table <- res.reg %>% mutate(completeness = rsquared_rank/ rsquared_full) %>%
+  mutate(earn_sd = round(earn_sd, digits = 2),
+         edu_sd = round(edu_sd, digits = 2),
+         wealth_sd = round(wealth_sd, digits = 2),
+         earn_edu_cor = round(earn_edu_cor, digits = 2),
+         earn_wealth_cor = round(earn_wealth_cor, digits = 2),
+         rsquared_rank = round(rsquared_rank, digits = 3),
+         rsquared_full = round(rsquared_full, digits = 3),
+         completeness = round(completeness, digits = 3)) %>% 
+  select(region, 
+         obs=observations,
+         "earn (sd)"=earn_sd,
+         "edu (sd)"=edu_sd, 
+         "wealth (sd)"=wealth_sd, 
+         "earn/edu corr"=earn_edu_cor,
+         "earn/wealth corr"=earn_wealth_cor,
+         "R2 (rank)"=rsquared_rank, 
+         "R2 (full)"=rsquared_full,
+         completeness) %>% 
+  arrange(region)
+
+stargazer(res.reg.table,
+          summary = F,
+          column.sep.width = "2pt",
+          out="tables/region_results.tex",
+          float=F,
+          rownames = F)
+
+### 4. Maps ------
 
 coordinates <- read_dta("data/coordinates_labormarkets.dta")
 
@@ -134,7 +169,7 @@ coordinates$region <- factor(coordinates$region)
 
 res.reg %>% 
     mutate(completeness=rsquared_rank/rsquared_full) %>%
-    mutate(completeness=ifelse(observations>=200,completeness,NA)) %>% 
+    #mutate(completeness=ifelse(observations>=200,completeness,NA)) %>% 
     inner_join(y=coordinates,by=c("region")) %>%
     ggplot(aes(x=x,y=y,group=region,fill=completeness)) +
     geom_polygon(color="black",size=0.1) +
@@ -212,7 +247,7 @@ plotdata <- res.reg.scatter %>%
   ylab("Full model R2")
 plotdata
 ggsave(file = "graphs/regions_R2.pdf",
-       height = 08, width = 11)
+       height = 06, width = 10)
 
 ### 4.2 Completeness against distribution of other predictors ------
 
@@ -220,11 +255,12 @@ res.reg.scatter %>%
   filter(observations > 200) %>%
   select(completeness, earn_sd,edu_sd, wealth_sd,
          earn_edu_cor, earn_wealth_cor) %>%
-  rename("Earnings sd" = earn_sd,
-         "Education sd" = edu_sd,
+  rename(
          "Wealth sd" = wealth_sd,
          "Earnings and Education corr" = earn_edu_cor,
-         "Earnings and Wealth corr" = earn_wealth_cor) %>%
+         "Earnings and Wealth corr" = earn_wealth_cor,
+         "Earnings sd" = earn_sd,
+         "Education sd" = edu_sd) %>%
   gather(key = variable, value = value, - completeness) %>%
   ggplot(aes(x = value, y = completeness)) +
   geom_point() + 
@@ -235,35 +271,7 @@ res.reg.scatter %>%
 ggsave(file = "graphs/completeness_dist.pdf",
        height = 09, width = 11)
 
-### Table of results by region
 
-res.reg.table <- res.reg %>% mutate(completeness = rsquared_rank/ rsquared_full) %>%
-  mutate(earn_sd = round(earn_sd, digits = 2),
-         edu_sd = round(edu_sd, digits = 2),
-         wealth_sd = round(wealth_sd, digits = 2),
-         earn_edu_cor = round(earn_edu_cor, digits = 2),
-         earn_wealth_cor = round(earn_wealth_cor, digits = 2),
-         rsquared_rank = round(rsquared_rank, digits = 3),
-         rsquared_full = round(rsquared_full, digits = 3),
-         completeness = round(completeness, digits = 3)) %>% 
-    select(region, 
-           obs=observations,
-           "earn (sd)"=earn_sd,
-           "edu (sd)"=edu_sd, 
-           "wealth (sd)"=wealth_sd, 
-           "earn/edu corr"=earn_edu_cor,
-           "earn/wealth corr"=earn_wealth_cor,
-           "R2 (rank)"=rsquared_rank, 
-           "R2 (full)"=rsquared_full,
-           completeness) %>% 
-    arrange(region)
-
-stargazer(res.reg.table,
-          summary = F,
-          column.sep.width = "2pt",
-          out="tables/region_results.tex",
-          float=F,
-          rownames = F)
 
 ### additional notes on graphs
 
