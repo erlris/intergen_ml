@@ -94,9 +94,9 @@ stargazer::stargazer(sampledata,
 #Plots
 
 sampledata %>%
-    select("Child's Average Earnings"=meanpearn_child,
-           "Father's Average Earnings"=meanpearn_father,
-           "Mother's Average Earnings"=meanpearn_mother) %>%
+    select("Child's Average Income"=meanpearn_child,
+           "Father's Average Income"=meanpearn_father,
+           "Mother's Average Income"=meanpearn_mother) %>%
     gather() %>%
     filter(value < 1000000) %>%
     ggplot(aes(x=value,fill=key,linetype=key)) +
@@ -106,7 +106,7 @@ sampledata %>%
                       palette="Set1") +
     theme_grey(base_size = 18) +
     theme(legend.position = "bottom",legend.direction = "vertical") +
-    labs(x="Average Earnings",
+    labs(x="Average Income",
          y="Density")
 
 ggsave("~/git/intergen_ml/graphs/earndensities.pdf",
@@ -942,8 +942,8 @@ sampledata %>%
     stat_summary_bin(fun.data="mean_cl_boot",
                      geom="pointrange",
                      breaks=seq(0,99,2)) +
-    labs(x="Parents' Joint Earnings Percentile",
-         y="Child's Earnings Percentile") +
+    labs(x="Parents' Joint Income Percentile",
+         y="Child's Income Percentile") +
     scale_x_continuous(breaks=seq(0,100,20)) +
     theme_grey(base_size=18)
     
@@ -956,13 +956,26 @@ sampledata %>%
     stat_summary(fun.data="mean_cl_boot",
                      geom="pointrange") +
     labs(x="Father's Years of Education",
-         y="Child's Earnings Percentile") +
+         y="Child's Income Percentile") +
     scale_x_continuous(breaks=seq(8,22,2)) +
     theme_grey(base_size=18) 
 
 ggsave("~/git/intergen_ml/graphs/conditionalmeans_childearn_fatheredu.pdf",
        height=7,width=7)
     
+sampledata %>%
+    filter(eduy_mother >= 8) %>%
+    ggplot(aes(x=eduy_mother,y=earncdf_child)) +
+    stat_summary(fun.data="mean_cl_boot",
+                 geom="pointrange") +
+    labs(x="Mother's Years of Education",
+         y="Child's Income Percentile") +
+    scale_x_continuous(breaks=seq(8,22,2)) +
+    theme_grey(base_size=18) 
+
+ggsave("~/git/intergen_ml/graphs/conditionalmeans_childearn_motheredu.pdf",
+       height=7,width=7)
+
 sampledata %>%
     ggplot(aes(x=wealthcdf_father,y=earncdf_child)) +
     stat_summary_bin(fun.data="mean_cl_boot",
@@ -974,6 +987,29 @@ sampledata %>%
 
 ggsave("~/git/intergen_ml/graphs/conditionalmeans_childearn_fatherwealth.pdf",
        height=7,width=7)
+
+#Generate joint wealth rank
+
+sampledata <- sampledata %>%
+    mutate(meanwealth_joint = meanwealth_father + meanwealth_mother) %>%
+    group_by(yob_child) %>%
+    mutate(wealthcdf_joint = cume_dist(meanwealth_joint)*100) %>%
+    ungroup()
+    
+sampledata %>%
+    ggplot(aes(x=wealthcdf_joint,y=earncdf_child)) +
+    stat_summary_bin(fun.data="mean_cl_boot",
+                     geom="pointrange",
+                     breaks=(seq(25,100,2))) +
+    labs(x="Joint Wealth Percentile",
+         y="Child's Income Percentile") +
+    theme_grey(base_size=18)
+
+ggsave("~/git/intergen_ml/graphs/conditionalmeans_childearn_jointwealth.pdf",
+       height=7,width=7)
+
+sampledata <- sampledata %>%
+    select(-meanwealth_joint,-wealthcdf_joint)
 
 #Making maps
 
