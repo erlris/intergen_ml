@@ -11,6 +11,7 @@ set.seed(123)
 
 setwd("/Users/jack/git_repos/intergen_ml") # Jack
 setwd("/home/erling/git/intergen_ml") #Erling on server
+setwd("C:/Users/s12864/Documents/Git/intergen_ml") #Erling on laptop
 
 # Load packages
 
@@ -19,6 +20,7 @@ library(tidyr)
 library(ggplot2)
 library(stringr)
 library(stargazer)
+library(haven)
 
 # set default ggplot size
 theme_set(theme_gray(base_size = 18))
@@ -122,11 +124,77 @@ stargazer(test.tbl, summary = F)
 
 ### 3. Maps ------
 
+coordinates <- read_dta("data/coordinates_labormarkets.dta")
+
+colnames(coordinates) <- c("region","id","x","y")
+
+coordinates$region <- factor(coordinates$region)
+
 ### 3.1 Completeness by region
+
+res.reg %>% 
+    mutate(completeness=rsquared_rank/rsquared_full) %>%
+    mutate(completeness=ifelse(observations>=200,completeness,NA)) %>% 
+    inner_join(y=coordinates,by=c("region")) %>%
+    ggplot(aes(x=x,y=y,group=region,fill=completeness)) +
+    geom_polygon(color="black",size=0.1) +
+    scale_fill_distiller(name="Completeness",
+                         palette = "Blues",
+                         direction=1) +
+    theme_void(base_size = 18) +
+    theme(legend.position = c(0.7,0.5))
+
+ggsave(file="graphs/completeness_map.pdf",
+       height=7,width=7)
+
 
 ### 3.2 Rank-rank R2 by region
 
+res.reg %>% 
+    mutate(rsquared_rank=ifelse(observations>=200,rsquared_rank,NA)) %>% 
+    inner_join(y=coordinates,by=c("region")) %>%
+    ggplot(aes(x=x,y=y,group=region,fill=rsquared_rank)) +
+    geom_polygon(color="black",size=0.1) +
+    scale_fill_distiller(name="Rank-Rank\nR-squared",
+                         palette = "Blues",
+                         direction=1) +
+    theme_void(base_size = 18) +
+    theme(legend.position = c(0.7,0.5))
+
+ggsave(file="graphs/rsquared_rank_map.pdf",
+       height=7,width=7)
+
 ### 3.3 Full R2 by region
+
+res.reg %>% 
+    mutate(rsquared_full=ifelse(observations>=200,rsquared_full,NA)) %>% 
+    inner_join(y=coordinates,by=c("region")) %>%
+    ggplot(aes(x=x,y=y,group=region,fill=rsquared_full)) +
+    geom_polygon(color="black",size=0.1) +
+    scale_fill_distiller(name="Full Model\nR-squared",
+                         palette = "Blues",
+                         direction=1) +
+    theme_void(base_size = 18) +
+    theme(legend.position = c(0.7,0.5))
+
+ggsave(file="graphs/rsquared_full_map.pdf",
+       height=7,width=7)
+
+### 3.4 Rank-Rank Slope by Region
+
+res.reg %>% 
+    mutate(rank_coef=ifelse(observations>=200,rank_coef,NA)) %>% 
+    inner_join(y=coordinates,by=c("region")) %>%
+    ggplot(aes(x=x,y=y,group=region,fill=rank_coef)) +
+    geom_polygon(color="black",size=0.1) +
+    scale_fill_distiller(name="Rank-Rank\nSlope",
+                         palette = "Blues",
+                         direction=1) +
+    theme_void(base_size = 18) +
+    theme(legend.position = c(0.7,0.5))
+
+ggsave(file="graphs/rankslope_map.pdf",
+       height=7,width=7)
 
 ### 4. Scatter plots by region ------
 
@@ -170,18 +238,32 @@ ggsave(file = "graphs/completeness_dist.pdf",
 ### Table of results by region
 
 res.reg.table <- res.reg %>% mutate(completeness = rsquared_rank/ rsquared_full) %>%
-  select(region, observations, earn_sd, edu_sd, wealth_sd, earn_edu_cor, earn_wealth_cor,
-         rsquared_rank, rsquared_full, completeness) %>%
   mutate(earn_sd = round(earn_sd, digits = 2),
-         edu_sd = round(earn_sd, digits = 2),
-         wealth_sd = round(earn_sd, digits = 2),
-         earn_edu_cor = round(earn_sd, digits = 2),
-         earn_wealth_cor = round(earn_sd, digits = 2),
-         rsquared_rank = round(earn_sd, digits = 3),
-         rsquared_full = round(earn_sd, digits = 3),
-         completeness = round(completeness, digits = 3))
+         edu_sd = round(edu_sd, digits = 2),
+         wealth_sd = round(wealth_sd, digits = 2),
+         earn_edu_cor = round(earn_edu_cor, digits = 2),
+         earn_wealth_cor = round(earn_wealth_cor, digits = 2),
+         rsquared_rank = round(rsquared_rank, digits = 3),
+         rsquared_full = round(rsquared_full, digits = 3),
+         completeness = round(completeness, digits = 3)) %>% 
+    select(region, 
+           obs=observations,
+           "earn (sd)"=earn_sd,
+           "edu (sd)"=edu_sd, 
+           "wealth (sd)"=wealth_sd, 
+           "earn/edu corr"=earn_edu_cor,
+           "earn/wealth corr"=earn_wealth_cor,
+           "R2 (rank)"=rsquared_rank, 
+           "R2 (full)"=rsquared_full,
+           completeness) %>% 
+    arrange(region)
 
-stargazer(res.reg.table, summary = F, column.sep.width = "2pt")
+stargazer(res.reg.table,
+          summary = F,
+          column.sep.width = "2pt",
+          out="tables/region_results.tex",
+          float=F,
+          rownames = F)
 
 ### additional notes on graphs
 
