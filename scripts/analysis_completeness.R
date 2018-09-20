@@ -1129,6 +1129,9 @@ variablelist <- plotdata %>%
     group_by(modelnumber) %>%
     filter(row_number(modelnumber)==1)
 
+variablelist <- variablelist %>%
+    mutate(variables=str_replace_all(variables,"Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household","Extended"))
+
 predictionresults <- inner_join(x=predictionresults,y=variablelist,by=c("modelnumber"))
 
 predictionresults %>%
@@ -1151,14 +1154,15 @@ predictionresults %>%
     scale_linetype(name="") + 
     scale_color_brewer(name="",palette = "Set1") +
     scale_shape(name="") +
-    facet_wrap(~ reorder(str_wrap(variables,40),modelnumber)) +
+    facet_wrap(~ reorder(str_wrap(variables,40),modelnumber),
+               nrow=4) +
     theme_grey(base_size=16) +
-    theme(legend.position = c(0.63,0.15)) +
-    labs(x="Observed Earnings Percentile",
-         y="Predicted Earnings Percentile")
+    theme(legend.position = c(0.85,0.1)) +
+    labs(x="Observed Income Percentile",
+         y="Predicted Income Percentile")
     
 ggsave("~/git/intergen_ml/graphs/predictioncomparisons.pdf",
-       height=9,width=16)
+       height=13,width=11)
 
 predictionresults %>%
     gather(key="key",value="value",-observed,-variables,-modelnumber) %>%
@@ -1181,11 +1185,12 @@ predictionresults %>%
     scale_linetype(name="") + 
     scale_color_brewer(name="",palette = "Set1") +
     scale_shape(name="") +
-    facet_wrap(~ reorder(str_wrap(variables,40),modelnumber)) +
+    facet_wrap(~ reorder(str_wrap(variables,40),modelnumber),
+               nrow=4) +
     theme_grey(base_size=16) +
-    theme(legend.position = c(0.63,0.15)) +
-    labs(x="Observed Earnings Percentile",
-         y="Predicted Earnings Percentile")
+    theme(legend.position = c(0.85,0.1)) +
+    labs(x="Observed Income Percentile",
+         y="Predicted Income Percentile")
 
 ggsave("~/git/intergen_ml/graphs/predictioncomparisons_45degreelines.pdf",
-       height=9,width=16)
+       height=13,width=11)
