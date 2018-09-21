@@ -137,18 +137,20 @@ res.reg.table <- res.reg %>% mutate(completeness = rsquared_rank/ rsquared_full)
          earn_wealth_cor = round(earn_wealth_cor, digits = 2),
          rsquared_rank = round(rsquared_rank, digits = 3),
          rsquared_full = round(rsquared_full, digits = 3),
-         completeness = round(completeness, digits = 3)) %>% 
-  select(region, 
+         completeness = round(completeness, digits = 3),
+         rank_coef = round(rank_coef, digits = 2)) %>% 
+  select(name, 
          obs=observations,
-         "earn (sd)"=earn_sd,
-         "edu (sd)"=edu_sd, 
-         "wealth (sd)"=wealth_sd, 
+         completeness,
+         "rr coef" = rank_coef,
+         #"earn (sd)"=earn_sd,
+         #"edu (sd)"=edu_sd, 
+         #"wealth (sd)"=wealth_sd, 
          "earn/edu corr"=earn_edu_cor,
          "earn/wealth corr"=earn_wealth_cor,
          "R2 (rank)"=rsquared_rank, 
-         "R2 (full)"=rsquared_full,
-         completeness) %>% 
-  arrange(region)
+         "R2 (full)"=rsquared_full) %>% 
+  arrange(completeness)
 
 stargazer(res.reg.table,
           summary = F,
@@ -175,7 +177,8 @@ res.reg %>%
     geom_polygon(color="black",size=0.1) +
     scale_fill_distiller(name="Completeness",
                          palette = "Blues",
-                         direction=1) +
+                         direction = 1,
+                         limits = c(0.2, 1)) +
     theme_void(base_size = 18) +
     theme(legend.position = c(0.7,0.5))
 
@@ -237,7 +240,7 @@ ggsave(file="graphs/rankslope_map.pdf",
 
 res.reg.scatter <- res.reg %>% mutate(completeness = rsquared_rank/ rsquared_full) %>%
   select(region, observations, earn_sd, edu_sd, wealth_sd, earn_edu_cor, earn_wealth_cor,
-         rsquared_rank, rsquared_full, completeness)
+         rsquared_rank, rsquared_full, completeness, name)
   
 ### 4.1 Rank-rank R2 and complete R2 ------
 
@@ -251,18 +254,22 @@ ggsave(file = "graphs/regions_R2.pdf",
 
 ### 4.2 Completeness against distribution of other predictors ------
 
+res.reg.scatter <- res.reg.scatter %>% mutate(name.lab = "")
+res.reg.scatter$name.lab[which(res.reg.scatter$name %in% c("Alta", "Hallingdal"))] <- res.reg.scatter$name[which(res.reg.scatter$name %in% c("Alta", "Hallingdal"))]
+
 res.reg.scatter %>%
   filter(observations > 200) %>%
-  select(completeness, earn_sd,edu_sd, wealth_sd,
-         earn_edu_cor, earn_wealth_cor) %>%
+  select(completeness, #earn_sd, edu_sd, wealth_sd,
+         earn_edu_cor, earn_wealth_cor, name.lab) %>%
   rename(
-         "Wealth sd" = wealth_sd,
-         "Earnings and Education corr" = earn_edu_cor,
-         "Earnings and Wealth corr" = earn_wealth_cor,
-         "Earnings sd" = earn_sd,
-         "Education sd" = edu_sd) %>%
-  gather(key = variable, value = value, - completeness) %>%
-  ggplot(aes(x = value, y = completeness)) +
+         #"Wealth sd" = wealth_sd,
+         "Income and Education corr" = earn_edu_cor,
+         "Income and Wealth corr" = earn_wealth_cor) %>%
+         #"Income sd" = earn_sd,
+         #"Education sd" = edu_sd) %>%
+  gather(key = variable, value = value, - completeness, - name.lab) %>%
+  ggplot(aes(x = value, y = completeness, label = name.lab)) +
+  geom_text(aes(label = name.lab), hjust = -.2) +
   geom_point() + 
   geom_smooth(method = "lm") +
   labs(x="Value", y = "Completeness") +
@@ -271,7 +278,13 @@ res.reg.scatter %>%
 ggsave(file = "graphs/completeness_dist.pdf",
        height = 09, width = 11)
 
+### associated calculations
 
+summary(lm(completeness ~ earn_edu_cor, data = res.reg.scatter))
+summary(lm(completeness ~ earn_wealth_cor, data = res.reg.scatter))
+summary(lm(completeness ~ earn_sd, data = res.reg.scatter))
+summary(lm(completeness ~ edu_sd, data = res.reg.scatter))
+summary(lm(completeness ~ wealth_sd, data = res.reg.scatter))
 
 ### additional notes on graphs
 
