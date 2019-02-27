@@ -27,8 +27,8 @@ theme_set(theme_gray(base_size = 18))
 
 ### 1. Load results ------
 
-res <- as_tibble(readRDS("data/modelresults.rds"))
-res.reg <- as_tibble(readRDS("data/regionresults.rds"))
+res <- as_tibble(readRDS("data/modelmetrics_traintest.rds"))
+res.reg <- as_tibble(readRDS("data/modelmetrics_regions.rds"))
 
 ### 2. Completeness ------
 
@@ -39,25 +39,25 @@ test <- res %>% filter(data == "Testing",
                                         "Income with multiple functional forms",
                                         "Income & wealth",
                                         "Income & education length",
-                                        "Income, wealth & education length")) %>%
-  select(OLS, variables, ElasticNet, XGBoost, modelnumber)
-
+                                        "Income, wealth & education length",
+                                        "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source, number of indivuduals in household & birth region"))
+  
 #test$variables[which(test$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")] <- "Extended"
 test$variables[which(test$variables == "Income with multiple functional forms")] <- "Income (flexible)"
-test$ElasticNet[which(test$variables == "Income (flexible)")] <- NA
+#test$ElasticNet[which(test$variables == "Income (flexible)")] <- NA
+test$variables[which(test$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source, number of indivuduals in household & birth region")] <- "Extended"
 
-
-test %>%
-  gather(key="Model",value="rsquared", - variables, - modelnumber) %>%
-  ggplot(aes(x=reorder(str_wrap(variables,15), modelnumber),
+test %>%  ggplot(aes(x=reorder(str_wrap(variables,15), modelnumber),
              y=rsquared,
-             fill=factor(Model,levels=c("OLS", "ElasticNet", "XGBoost"),
-                         labels = c("OLS", "Elastic Net", "Gradient Boosted Trees")))) +
+             fill=factor(model,levels=c("OLS", "ElasticNet","Ranger","XGBoost","NeuralNet"),
+                         labels = c("OLS", "Elastic Net","Random Forest", "Gradient Boosted Trees",
+                                    "Neural Net")))) +
   stat_summary(fun.y = "mean", geom="col", position=position_dodge(),
                color="black") +
   scale_fill_brewer(palette = "Blues",name="Estimator") +
   labs(x="Included Variables",y="R-Squared") +
   theme(legend.position = "bottom") +
+  scale_y_continuous(breaks=seq(0,0.06,0.01)) +
   guides(fill = guide_legend(title.position = "top",title.hjust = 0.5))
 
 ggsave(file="graphs/test_R2.pdf",
@@ -70,19 +70,20 @@ train <- res %>% filter(data == "Training Resamples",
                                         "Income with multiple functional forms",
                                         "Income & wealth",
                                         "Income & education length",
-                                        "Income, wealth & education length")) %>%
-  select(OLS, variables, ElasticNet, XGBoost, modelnumber)
+                                        "Income, wealth & education length",
+                                        "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source, number of indivuduals in household & birth region"))
 
-#train$variables[which(train$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")] <- "Extended"
+#test$variables[which(test$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source & number of indivuduals in household")] <- "Extended"
 train$variables[which(train$variables == "Income with multiple functional forms")] <- "Income (flexible)"
-train$ElasticNet[which(train$variables == "Income (flexible)")] <- NA
+#test$ElasticNet[which(test$variables == "Income (flexible)")] <- NA
+train$variables[which(train$variables == "Income, wealth, education length and type, occupation, marital status, urban/rural, student activity, main income source, number of indivuduals in household & birth region")] <- "Extended"
 
 train %>%
-  gather(key="Model", value="rsquared",- variables, - modelnumber) %>%
   ggplot(aes(x = reorder( str_wrap(variables, 15), modelnumber),
              y = rsquared,
-             fill = factor(Model, levels = c("OLS", "ElasticNet", "XGBoost"),
-                         labels = c("OLS", "Elastic Net", "Gradient Boosted Trees")))) +
+             fill=factor(model,levels=c("OLS", "ElasticNet","Ranger","XGBoost","NeuralNet"),
+                         labels = c("OLS", "Elastic Net","Random Forest", "Gradient Boosted Trees",
+                                    "Neural Net")))) +
   stat_summary(fun.y = "mean", geom = "col",position=position_dodge(),
                color = "black") +
   stat_summary(fun.data = "mean_se",
@@ -93,6 +94,7 @@ train %>%
   scale_fill_brewer(palette = "Blues",name="Estimator") +
   labs(x = "Included Variables", y = "R-Squared") +
   theme(legend.position = "bottom") +
+  scale_y_continuous(breaks=seq(0,0.06,0.01)) +
   guides(fill = guide_legend(title.position = "top", title.hjust = 0.5))
 
 ggsave(file = "graphs/train_R2.pdf",
@@ -102,62 +104,50 @@ ggsave(file = "graphs/train_R2.pdf",
 
 train$variables <- gsub(x = train$variables, pattern = "&", replacement = "and")
 train.tbl <- train %>%
-  gather(key = "Model", value = "rsquared",- variables, - modelnumber) %>%
-  group_by(variables, Model) %>%
+  group_by(variables, model) %>%
   summarize("Training R2 (mean)" = round(mean(rsquared), digits = 3),
             "Training R2 (sd)" = round(sd(rsquared), digits = 4)) %>%
-  filter(is.na(`Training R2 (mean)`) == F) %>%
-  mutate(completeness = round(`Training R2 (mean)`/0.0490, digits = 2))
-stargazer(train.tbl, summary = F)
+  filter(is.na(`Training R2 (mean)`) == F)
+stargazer(train.tbl, summary = F,
+          out="tables/train_results.tex",
+          float = F)
 
 test$variables <- gsub(x = test$variables, pattern = "&", replacement = "and")
 test.tbl <- test %>%
-  gather(key = "Model", value = "rsquared",- variables, - modelnumber) %>%
-  group_by(variables, Model) %>%
+  group_by(variables, model) %>%
   summarize("Test R2" = round(mean(rsquared), digits = 3)) %>%
   filter(is.na(`Test R2`) == F) %>%
-  mutate(completeness = round(`Test R2`/0.0480, digits = 2))
-stargazer(test.tbl, summary = F)
+  mutate(completeness = round(`Test R2`/0.05474, digits = 2))
+stargazer(test.tbl, summary = F,
+          out="tables/test_results.tex",
+          float=F)
 
 ### 3. Regional results
 
 # generate completeness index
 
 res.reg.clean <- res.reg %>% 
-  mutate(completeness=rsquared_rank/rsquared_full) %>%
-  mutate(completeness=ifelse(observations>=200,completeness,NA))
+  mutate(completeness=rankr2/nnr2)
+
 
 # Table of results by region
 
-res.reg.table <- res.reg %>% mutate(completeness = rsquared_rank/ rsquared_full) %>%
-  mutate(earn_sd = round(earn_sd, digits = 2),
-         edu_sd = round(edu_sd, digits = 2),
-         wealth_sd = round(wealth_sd, digits = 2),
-         earn_edu_cor = round(earn_edu_cor, digits = 2),
-         earn_wealth_cor = round(earn_wealth_cor, digits = 2),
-         rsquared_rank = round(rsquared_rank, digits = 3),
-         rsquared_full = round(rsquared_full, digits = 3),
-         completeness = round(completeness, digits = 3),
-         rank_coef = round(rank_coef, digits = 2)) %>% 
-  select(name, 
-         obs=observations,
+res.reg.table <- res.reg.clean %>%  
+  filter(n > 1000) %>%
+  mutate(rankr2 = round(rankr2, digits = 3),
+         nnr2 = round(nnr2, digits = 3),
+         completeness = round(completeness, digits = 3)) %>% 
+  select(obs = n,
          completeness,
-         "rr coef" = rank_coef,
-         #"earn (sd)"=earn_sd,
-         #"edu (sd)"=edu_sd, 
-         #"wealth (sd)"=wealth_sd, 
-         "earn/edu corr"=earn_edu_cor,
-         "earn/wealth corr"=earn_wealth_cor,
-         "R2 (rank)"=rsquared_rank, 
-         "R2 (full)"=rsquared_full) %>% 
+         "R2 (rank)"= rankr2, 
+         "R2 (neural net)"= nnr2) %>% 
   arrange(completeness)
 
 stargazer(res.reg.table,
           summary = F,
           column.sep.width = "2pt",
           out="tables/region_results.tex",
-          float=F,
-          rownames = F)
+          float=F)
 
 ### 4. Maps ------
 
@@ -169,16 +159,15 @@ coordinates$region <- factor(coordinates$region)
 
 ### 3.1 Completeness by region
 
-res.reg %>% 
-    mutate(completeness=rsquared_rank/rsquared_full) %>%
-    #mutate(completeness=ifelse(observations>=200,completeness,NA)) %>% 
-    inner_join(y=coordinates,by=c("region")) %>%
-    ggplot(aes(x=x,y=y,group=region,fill=completeness)) +
-    geom_polygon(color="black",size=0.1) +
+res.reg.clean %>% rename("region" = "region_child") %>%
+    mutate(completeness = ifelse(n >= 1000, completeness, NA)) %>% 
+    inner_join(y=coordinates, by=c("region")) %>%
+    ggplot(aes(x=x,y=y, group=region, fill=completeness)) +
+    geom_polygon(color="black", size=0.1) +
     scale_fill_distiller(name="Completeness",
                          palette = "Blues",
                          direction = 1,
-                         limits = c(0.2, 1)) +
+                         limits = c(0,1)) +
     theme_void(base_size = 18) +
     theme(legend.position = c(0.7,0.5))
 
@@ -188,10 +177,10 @@ ggsave(file="graphs/completeness_map.pdf",
 
 ### 3.2 Rank-rank R2 by region
 
-res.reg %>% 
-    mutate(rsquared_rank=ifelse(observations>=200,rsquared_rank,NA)) %>% 
+res.reg.clean %>% rename("region" = "region_child") %>%
+  mutate(rankr2=ifelse(n>=1000,rankr2,NA)) %>% 
     inner_join(y=coordinates,by=c("region")) %>%
-    ggplot(aes(x=x,y=y,group=region,fill=rsquared_rank)) +
+    ggplot(aes(x=x,y=y,group=region,fill=rankr2)) +
     geom_polygon(color="black",size=0.1) +
     scale_fill_distiller(name="Rank-Rank\nR-squared",
                          palette = "Blues",
@@ -204,10 +193,10 @@ ggsave(file="graphs/rsquared_rank_map.pdf",
 
 ### 3.3 Full R2 by region
 
-res.reg %>% 
-    mutate(rsquared_full=ifelse(observations>=200,rsquared_full,NA)) %>% 
+res.reg %>% rename("region" = "region_child") %>%
+    mutate(nnr2=ifelse(n>=1000,nnr2,NA)) %>% 
     inner_join(y=coordinates,by=c("region")) %>%
-    ggplot(aes(x=x,y=y,group=region,fill=rsquared_full)) +
+    ggplot(aes(x=x,y=y,group=region,fill=nnr2)) +
     geom_polygon(color="black",size=0.1) +
     scale_fill_distiller(name="Full Model\nR-squared",
                          palette = "Blues",
@@ -220,10 +209,10 @@ ggsave(file="graphs/rsquared_full_map.pdf",
 
 ### 3.4 Rank-Rank Slope by Region
 
-res.reg %>% 
-    mutate(rank_coef=ifelse(observations>=200,rank_coef,NA)) %>% 
+res.reg %>% rename("region" = "region_child") %>%
+  mutate(rankcoef = ifelse(n >= 1000, rankcoef,NA)) %>% 
     inner_join(y=coordinates,by=c("region")) %>%
-    ggplot(aes(x=x,y=y,group=region,fill=rank_coef)) +
+    ggplot(aes(x=x,y=y,group=region,fill=rankcoef)) +
     geom_polygon(color="black",size=0.1) +
     scale_fill_distiller(name="Rank-Rank\nSlope",
                          palette = "Blues",
@@ -233,6 +222,9 @@ res.reg %>%
 
 ggsave(file="graphs/rankslope_map.pdf",
        height=7,width=7)
+
+
+### OLD: not in latest version
 
 ### 4. Scatter plots by region ------
 
